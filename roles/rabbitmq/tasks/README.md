@@ -1,0 +1,1 @@
+# RabbitMQ install using Ansible

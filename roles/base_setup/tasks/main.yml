@@ -1,0 +1,11 @@
+---
+- name: Base setup
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop:
+    - apt-transport-https
+    - vim-nox
+    - curl
+    - git

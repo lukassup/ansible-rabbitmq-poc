@@ -1,0 +1,151 @@
+---
+- name: install prerequisite packages
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop:
+    - adduser
+    - apt-transport-https
+    - init-system-helpers
+    - logrotate
+    - socat
+
+- name: add rabbitmq repo gpg signing key
+  apt_key:
+    url: https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc
+    state: present
+
+- name: install rabbitmq erlang repository
+  apt_repository:
+    repo: deb http://dl.bintray.com/rabbitmq-erlang/debian stretch erlang-22.x
+    state: present
+
+- name: install rabbitmq repository
+  apt_repository:
+    repo: deb http://dl.bintray.com/rabbitmq/debian stretch main
+    state: present
+
+- name: pin repository for erlang packages
+  copy:
+    src: erlang.preferences
+    dest: /etc/apt/preferences.d/erlang
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: pin repository for rabbitmq
+  copy:
+    src: rabbitmq.preferences
+    dest: /etc/apt/preferences.d/rabbitmq
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: install rabbitmq with dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop:
+    - erlang-base
+    - erlang-asn1
+    - erlang-crypto
+    - erlang-eldap
+    - erlang-ftp
+    - erlang-inets
+    - erlang-mnesia
+    - erlang-os-mon
+    - erlang-parsetools
+    - erlang-public-key
+    - erlang-runtime-tools
+    - erlang-snmp
+    - erlang-ssl
+    - erlang-syntax-tools
+    - erlang-tftp
+    - erlang-tools
+    - erlang-xmerl
+    - rabbitmq-server
+
+- name: make sure rabbitmq-server.service.d dir is created
+  file:
+    path: /etc/systemd/system/rabbitmq-server.service.d
+    state: directory
+
+- name: change limit of rabbitmq-server.service open files
+  template:
+    src: limits.conf.j2
+    dest: /etc/systemd/system/rabbitmq-server.service.d/limits.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart rabbitmq-server
+
+- name: ensure rabbitmq-server.service is enabled
+  service:
+    name: rabbitmq-server
+    enabled: true
+
+- name: ensure rabbitmq-server.service is running
+  service:
+    name: rabbitmq-server
+    state: started
+
+- name: enable rabbitmq_management plugin
+  rabbitmq_plugin:
+    names: rabbitmq_management
+    state: enabled
+
+- name: ensure rabbitmq user 'guest' is removed
+  rabbitmq_user:
+    user: guest
+    state: absent
+
+- name: ensure rabbitmq admin user '{{ rabbitmq_admin_user }}' exists
+  rabbitmq_user:
+    user: "{{ rabbitmq_admin_user }}"
+    vhost: /
+    password: "{{ rabbitmq_admin_password }}"
+    update_password: always
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+    tags: administrator
+    state: present
+
+- name: ensure rabbitmq vhost '{{ rabbitmq_vhost }}' exists
+  rabbitmq_vhost:
+    name: "{{ rabbitmq_vhost }}"
+    state: present
+
+- name: ensure rabbitmq user '{{ rabbitmq_user }}' exists with rw access on '{{ rabbitmq_vhost }}'
+  rabbitmq_user:
+    user: "{{ rabbitmq_user }}"
+    vhost: "{{ rabbitmq_vhost }}"
+    password: "{{ rabbitmq_user_password }}"
+    update_password: always
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+    state: present
+
+- name: allow rabbitmq admin port externally
+  iptables:
+    action: insert
+    chain: INPUT
+    comment: RabbitMQ admin
+    protocol: tcp
+    destination_port: '15672'
+    jump: ACCEPT
+
+- name: allow rabbitmq amqp port locally
+  iptables:
+    action: insert
+    chain: INPUT
+    comment: RabbitMQ AMQP
+    protocol: tcp
+    destination_port: '5672'
+    jump: ACCEPT
+    source: 127.0.0.1/8

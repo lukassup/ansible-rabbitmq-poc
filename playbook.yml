@@ -1,0 +1,6 @@
+---
+- name: install
+  hosts: all
+  roles:
+    - base_setup
+    - rabbitmq
