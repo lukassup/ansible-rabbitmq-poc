@@ -4,6 +4,7 @@ cffi==1.14.0
 cryptography==2.8
 jinja2==2.11.1
 markupsafe==1.1.1
+pika==1.1.0
 pycparser==2.20
 pyyaml==5.3
 six==1.14.0

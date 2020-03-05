@@ -10,7 +10,6 @@ cryptography==2.8
 jinja2==2.11.1
 markupsafe==1.1.1
 pathspec==0.7.0
-pika==1.1.0
 pycparser==2.20
 pyyaml==5.3
 regex==2020.2.20
