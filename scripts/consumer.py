@@ -27,7 +27,7 @@ if __name__ == "__main__":
     )
     channel = connection.channel()
     channel.exchange_declare(exchange="test")
-    channel.queue_declare(queue="test")
+    channel.queue_declare(queue="test", arguments={"x-message-ttl": 3600})
     channel.queue_bind(exchange="test", queue="test")
     print(" [*] Waiting for logs. To exit press CTRL+C")
     channel.basic_consume(queue="test", on_message_callback=callback, auto_ack=True)
