@@ -21,8 +21,8 @@ if __name__ == "__main__":
         )
     )
     channel = connection.channel()
-    channel.exchange_declare(exchange='logs', exchange_type='fanout')
-    message = ' '.join(sys.argv[1:]) or "info: Hello World!"
-    channel.basic_publish(exchange='logs', routing_key='', body=message)
+    channel.exchange_declare(exchange="test")
+    message = " ".join(sys.argv[1:]) or "info: Hello World!"
+    channel.basic_publish(exchange="test", routing_key="test", body=message)
     print(" [x] Sent %r" % message)
     connection.close()
