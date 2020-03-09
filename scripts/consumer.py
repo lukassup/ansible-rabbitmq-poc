@@ -12,10 +12,7 @@ RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "conejo")
 
 
 def callback(ch, method, properties, body):
-    print(" [x] Received %r" % body)
-    time.sleep(body.count(b"."))
-    ch.basic_ack(delivery_tag=method.delivery_tag)
-    print(" [x] Done")
+    print(" [x] %r" % body)
 
 
 if __name__ == "__main__":
@@ -29,8 +26,10 @@ if __name__ == "__main__":
         )
     )
     channel = connection.channel()
-    channel.basic_qos(prefetch_count=1)
-    channel.queue_declare(queue="task_queue", durable=True)
-    channel.basic_consume(queue="task_queue", on_message_callback=callback)
-    print(" [*] Waiting for messages. To exit press CTRL+C")
+    channel.exchange_declare(exchange="logs", exchange_type="fanout")
+    result = channel.queue_declare(queue="", exclusive=True)
+    queue_name = result.method.queue
+    channel.queue_bind(exchange="logs", queue=queue_name)
+    print(" [*] Waiting for logs. To exit press CTRL+C")
+    channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=True)
     channel.start_consuming()
